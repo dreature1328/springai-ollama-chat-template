@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// 记忆服务
+// 历史记忆服务
 @Service
 public class MemoryService {
     // 键值对存储和管理对话历史
