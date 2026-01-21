@@ -10,11 +10,13 @@ import org.springframework.ai.transformer.splitter.TextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.SimpleVectorStore;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import xyz.dreature.soct.mapper.VectorMapper;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,9 +37,12 @@ public class VectorService {
     private final VectorStore vectorStore;
     // 文本分割器
     private final TextSplitter textSplitter;
-    // 向量存储路径
-    @Value("${app.ai.vector.store.path}")
+    // 本地向量存储路径
+    @Value("${app.vector.store.path}")
     private String vectorStorePath;
+    // 数据库向量映射器
+    @Autowired
+    private VectorMapper vectorMapper;
 
     @Autowired
     public VectorService(VectorStore vectorStore, TextSplitter textSplitter) {
@@ -111,7 +116,7 @@ public class VectorService {
         List<Document> chunks = textSplitter.split(document);
         vectorStore.add(chunks);
 
-        log.info("文档 {} 分割成功，文本块块数：{}", chunks.size());
+        log.info("文档 {} 分割成功，文本块块数：{}", title, chunks.size());
         return chunks;
     }
 
@@ -182,11 +187,14 @@ public class VectorService {
     // 清空向量存储
     public void clear() {
         try {
-            Path path = Paths.get(vectorStorePath);
-            Files.write(path, "{}".getBytes(StandardCharsets.UTF_8));
-            // 重新加载
-            if (vectorStore instanceof SimpleVectorStore) {
+            if (vectorStore instanceof SimpleVectorStore) { // 本地存储
+                Path path = Paths.get(vectorStorePath);
+                Files.write(path, "{}".getBytes(StandardCharsets.UTF_8));
                 ((SimpleVectorStore) vectorStore).load(path.toFile());
+            } else if (vectorStore instanceof PgVectorStore) { // 数据库存储
+                vectorMapper.truncate();
+            } else {
+                throw new RuntimeException("向量存储暂不支持清空");
             }
         } catch (IOException e) {
             throw new RuntimeException("向量存储读取失败", e);

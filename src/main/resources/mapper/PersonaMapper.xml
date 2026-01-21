@@ -2,9 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="xyz.dreature.soct.mapper.PersonaMapper">
-
     <!-- ===== 结果映射配置 ===== -->
-    <resultMap id="personaMap" type="xyz.dreature.soct.common.model.entity.Persona">
+    <!-- 表和类映射关系 -->
+    <resultMap id="personaMap" type="persona">
         <id property="id" column="id"/>
         <result property="name" column="name"/>
         <result property="personality" column="personality"/>
@@ -15,11 +15,11 @@
     </resultMap>
 
     <!-- ===== 复用 SQL 片段 ===== -->
-    <sql id="table">persona</sql>
-    <sql id="columns">
-        id, name, personality, language_style, background, keywords
-    </sql>
+    <!-- 表结构 -->
+    <sql id="table">personas</sql>
+    <sql id="columns">id, name, personality, language_style, background, keywords</sql>
 
+    <!-- 值映射 -->
     <sql id="values">
         #{id}, #{name}, #{personality}, #{languageStyle}, #{background},
         #{keywords, typeHandler=arrayTypeHandler}
@@ -30,6 +30,7 @@
         #{item.keywords, typeHandler=arrayTypeHandler}
     </sql>
 
+    <!-- 更新设置 -->
     <sql id="set">
         name = #{name},
         personality = #{personality},
@@ -46,13 +47,60 @@
         keywords = EXCLUDED.keywords
     </sql>
 
-    <!-- ===== 基础CRUD操作 ===== -->
+    <!-- ===== 通用基础操作 ===== -->
+    <!-- 查询总数 -->
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*)
+        FROM <include refid="table"/>
+    </select>
+
+    <!-- 查询全部 -->
+    <select id="selectAll" resultMap="personaMap">
+        SELECT <include refid="columns"/>
+        FROM <include refid="table"/>
+    </select>
+
+    <!-- 查询全部（游标） -->
+    <select id="selectAllWithCursor" resultMap="personaMap">
+        SELECT <include refid="columns"/>
+        FROM <include refid="table"/>
+    </select>
+
+    <!-- 查询随机 -->
+    <select id="selectRandom" parameterType="int" resultMap="personaMap">
+        SELECT <include refid="columns"/>
+        FROM <include refid="table"/>
+        ORDER BY RANDOM()
+        LIMIT #{limit}
+    </select>
+
+    <!-- 页面查询 -->
+    <select id="selectByPage" resultMap="personaMap">
+        SELECT <include refid="columns"/>
+        FROM <include refid="table"/>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 条件查询 -->
+    <select id="selectByCondition" parameterType="map" resultMap="personaMap">
+        SELECT <include refid="columns"/>
+        FROM <include refid="table"/>
+        <where>
+            <foreach collection="_parameter" index="key" item="value">
+                <!-- 此处存在 SQL 注入风险，需预先白名单校验 -->
+                AND ${key} = #{value}
+            </foreach>
+        </where>
+    </select>
+
+    <!-- 单项查询 -->
     <select id="selectById" parameterType="long" resultMap="personaMap">
         SELECT <include refid="columns"/>
         FROM <include refid="table"/>
         WHERE id = #{id}
     </select>
 
+    <!-- 单批查询 -->
     <select id="selectBatchByIds" resultMap="personaMap">
         SELECT <include refid="columns"/>
         FROM <include refid="table"/>
@@ -62,12 +110,14 @@
         </foreach>
     </select>
 
+    <!-- 单项插入 -->
     <insert id="insert" parameterType="xyz.dreature.soct.common.model.entity.Persona">
         INSERT INTO <include refid="table"/>
         (<include refid="columns"/>)
         VALUES (<include refid="values"/>)
     </insert>
 
+    <!-- 单批插入 -->
     <insert id="insertBatch" parameterType="list">
         INSERT INTO <include refid="table"/>
         (<include refid="columns"/>)
@@ -77,12 +127,14 @@
         </foreach>
     </insert>
 
+    <!-- 单项更新 -->
     <update id="update" parameterType="xyz.dreature.soct.common.model.entity.Persona">
         UPDATE <include refid="table"/>
         SET <include refid="set"/>
         WHERE id = #{id}
     </update>
 
+    <!-- 单批更新 -->
     <update id="updateBatch" parameterType="list">
         UPDATE <include refid="table"/>
         SET
@@ -117,6 +169,7 @@
         </foreach>
     </update>
 
+    <!-- 单项插入或更新 -->
     <insert id="upsert" parameterType="xyz.dreature.soct.common.model.entity.Persona">
         INSERT INTO <include refid="table"/>
         (<include refid="columns"/>)
@@ -125,6 +178,7 @@
         SET <include refid="conflictSet"/>
     </insert>
 
+    <!-- 单批插入或更新 -->
     <insert id="upsertBatch" parameterType="list">
         INSERT INTO <include refid="table"/>
         (<include refid="columns"/>)
@@ -136,11 +190,13 @@
         SET <include refid="conflictSet"/>
     </insert>
 
+    <!-- 单项删除 -->
     <delete id="deleteById" parameterType="long">
         DELETE FROM <include refid="table"/>
         WHERE id = #{id}
     </delete>
 
+    <!-- 单批删除 -->
     <delete id="deleteBatchByIds" parameterType="list">
         DELETE FROM <include refid="table"/>
         WHERE id IN

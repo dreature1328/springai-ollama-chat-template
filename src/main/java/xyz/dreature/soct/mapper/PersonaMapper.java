@@ -2,6 +2,7 @@ package xyz.dreature.soct.mapper;
 
 import org.apache.ibatis.annotations.Mapper;
 import xyz.dreature.soct.common.model.entity.Persona;
+import xyz.dreature.soct.mapper.base.BaseMapper;
 
 @Mapper
 public interface PersonaMapper extends BaseMapper<Persona, Long> {
