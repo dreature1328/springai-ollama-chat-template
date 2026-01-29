@@ -1,8 +1,8 @@
 package xyz.dreature.soct.common.model.entity;
 
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
-import javax.validation.constraints.NotNull;
 import java.util.Arrays;
 
 // 人格实体

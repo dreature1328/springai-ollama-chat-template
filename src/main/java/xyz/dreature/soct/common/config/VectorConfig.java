@@ -1,53 +1,48 @@
 package xyz.dreature.soct.common.config;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.transformer.splitter.TokenTextSplitter;
-import org.springframework.ai.vectorstore.SimpleVectorStore;
-import org.springframework.ai.vectorstore.VectorStore;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
-import xyz.dreature.soct.common.util.RecursiveCharacterTextSplitter;
-
-import java.io.File;
+import xyz.dreature.soct.common.util.RecursiveRegexTextSplitter;
 
 // 向量配置
 @Slf4j
 @Configuration
 public class VectorConfig {
-    // 向量存储路径
-    @Value("${app.ai.vector.store.path}")
+    // 向量本地存储路径
+    @Value("${app.vector.store.path}")
     private String vectorStorePath;
 
-    @Bean
-    public VectorStore localVectorStore(@Qualifier("ollamaEmbeddingModel") EmbeddingModel embeddingModel) {
-        SimpleVectorStore vectorStore = SimpleVectorStore.builder(embeddingModel).build();
-
-        File jsonFile = new File(vectorStorePath);
-
-        if (jsonFile.exists()) {
-            vectorStore.load(jsonFile);
-        }
-
-        // 注册关闭钩子自动保存
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            vectorStore.save(jsonFile);
-            log.debug("向量已保存至：{}", vectorStorePath);
-        }));
-
-        return vectorStore;
-    }
+    // 本地文件向量存储
+//    @Bean
+//    public VectorStore localVectorStore(@Qualifier("ollamaEmbeddingModel") EmbeddingModel embeddingModel) {
+//        SimpleVectorStore vectorStore = SimpleVectorStore.builder(embeddingModel).build();
+//
+//        File jsonFile = new File(vectorStorePath);
+//
+//        if (jsonFile.exists()) {
+//            vectorStore.load(jsonFile);
+//        }
+//
+//        // 注册关闭钩子自动保存
+//        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+//            vectorStore.save(jsonFile);
+//            log.debug("向量已保存至：{}", vectorStorePath);
+//        }));
+//
+//        return vectorStore;
+//    }
 
     // 迭代字符文本分割器
     @Bean
     @Primary
-    public RecursiveCharacterTextSplitter recursiveCharacterTextSplitter() {
+    public RecursiveRegexTextSplitter recursiveCharacterTextSplitter() {
         // 按自定义分隔符列表递归切割，优先按段落、句子分
-        return new RecursiveCharacterTextSplitter();
+        return new RecursiveRegexTextSplitter();
     }
 
     // 固定 token 文本分割器

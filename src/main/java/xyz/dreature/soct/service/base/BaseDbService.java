@@ -1,11 +1,11 @@
-package xyz.dreature.soct.service;
+package xyz.dreature.soct.service.base;
 
 import org.apache.ibatis.cursor.Cursor;
 import org.junit.jupiter.params.shadow.com.univocity.parsers.common.DataProcessingException;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import xyz.dreature.soct.common.util.BatchUtils;
-import xyz.dreature.soct.mapper.BaseMapper;
+import xyz.dreature.soct.mapper.base.BaseMapper;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -17,14 +17,15 @@ import java.util.function.Function;
 
 // 数据库服务
 @Transactional
-public class DbService<T, ID extends Serializable> {
+public abstract class BaseDbService<T, ID extends Serializable, M extends BaseMapper<T, ID>> {
     // ORM 映射器
-    protected BaseMapper<T, ID> mapper;
+    protected M mapper;
 
-    public DbService(BaseMapper<T, ID> mapper) {
+    public BaseDbService(M mapper) {
         this.mapper = mapper;
     }
 
+    // ===== 通用基础操作 =====
     // 查询总数
     @Transactional(readOnly = true, propagation = Propagation.SUPPORTS)
     public int countAll() {

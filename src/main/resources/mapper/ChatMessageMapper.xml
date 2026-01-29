@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="xyz.dreature.soct.mapper.ChatMessageMapper">
+    <!-- ===== 结果映射配置 ===== -->
+    <!-- 表和类映射关系 -->
+    <resultMap id="chatMessageMap" type="chatMessage">
+        <id property="id" column="id"/>
+        <result property="conversationId" column="conversation_id"/>
+        <result property="messageType" column="message_type"/>
+        <result property="text" column="text"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="metadata" column="metadata"
+                typeHandler="jsonTypeHandler"/>
+    </resultMap>
+
+    <!-- ===== 复用 SQL 片段 ===== -->
+    <!-- 表和类映射关系 -->
+    <sql id="table">chat_messages</sql>
+    <sql id="columns">id, conversation_id, message_type, text, created_at, metadata</sql>
+
+    <!-- 值映射 -->
+    <sql id="values">
+        #{id}, #{conversationId}, #{messageType}, #{text}, #{createdAt},
+        #{metadata, typeHandler=jsonTypeHandler}
+    </sql>
+
+    <sql id="itemValues">
+        #{item.id}, #{item.conversationId}, #{item.messageType}, #{item.text}, #{item.createdAt},
+        #{item.metadata, typeHandler=jsonTypeHandler}
+    </sql>
+
+    <!-- 更新设置 -->
+    <sql id="set">
+        conversation_id = #{conversationId},
+        message_type = #{messageType},
+        text = #{text},
+        metadata = #{metadata, typeHandler=jsonTypeHandler}
+    </sql>
+
+    <sql id="conflictSet">
+        conversation_id = EXCLUDED.conversation_id,
+        message_type = EXCLUDED.message_type,
+        text = EXCLUDED.text,
+        metadata = EXCLUDED.metadata
+    </sql>
+
+    <!-- 排序规则 -->
+    <sql id="order">created_at DESC</sql>
+
+    <!-- ===== 通用基础操作 ===== -->
+    <!-- 查询总数 -->
+    <select id="countAll" resultType="int">
+        SELECT COUNT(*) FROM <include refid="table"/>
+    </select>
+
+    <!-- 查询全部 -->
+    <select id="selectAll" resultMap="chatMessageMap">
+        SELECT <include refid="columns"/> FROM <include refid="table"/> ORDER BY <include refid="order"/>
+    </select>
+
+    <!-- 查询全部（游标） -->
+    <select id="selectAllWithCursor" resultMap="chatMessageMap">
+        SELECT <include refid="columns"/>
+        FROM <include refid="table"/>
+    </select>
+
+    <!-- 查询随机 -->
+    <select id="selectRandom" parameterType="int" resultMap="chatMessageMap">
+        SELECT <include refid="columns"/>
+        FROM <include refid="table"/>
+        ORDER BY RANDOM()
+        LIMIT #{limit}
+    </select>
+
+    <!-- 页面查询 -->
+    <select id="selectByPage" resultMap="chatMessageMap">
+        SELECT <include refid="columns"/>
+        FROM <include refid="table"/>
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <!-- 条件查询 -->
+    <select id="selectByCondition" parameterType="map" resultMap="chatMessageMap">
+        SELECT <include refid="columns"/>
+        FROM <include refid="table"/>
+        <where>
+            <foreach collection="_parameter" index="key" item="value">
+                <!-- 此处存在 SQL 注入风险，需预先白名单校验 -->
+                AND ${key} = #{value}
+            </foreach>
+        </where>
+    </select>
+
+    <!-- 单项查询 -->
+    <select id="selectById" parameterType="string" resultMap="chatMessageMap">
+        SELECT <include refid="columns"/>
+        FROM <include refid="table"/>
+        WHERE id = #{id}
+    </select>
+
+    <!-- 单批查询 -->
+    <select id="selectBatchByIds" resultMap="chatMessageMap">
+        SELECT <include refid="columns"/>
+        FROM <include refid="table"/>
+        WHERE id IN
+        <foreach collection="list" item="item" open="(" close=")" separator=",">
+            #{item}
+        </foreach>
+        ORDER BY <include refid="order"/>
+    </select>
+
+    <!-- 单项插入 -->
+    <insert id="insert" parameterType="chatMessage">
+        INSERT INTO <include refid="table"/> (<include refid="columns"/>)
+        VALUES (<include refid="values"/>)
+    </insert>
+
+    <!-- 单批插入 -->
+    <insert id="insertBatch" parameterType="list">
+        INSERT INTO <include refid="table"/> (<include refid="columns"/>)
+        VALUES
+        <foreach collection="list" item="item" index="index" separator=",">
+            (<include refid="itemValues"/>)
+        </foreach>
+    </insert>
+
+    <!-- 单项更新 -->
+    <update id="update" parameterType="chatMessage">
+        UPDATE <include refid="table"/>
+        SET <include refid="set"/>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 单批更新 -->
+    <update id="updateBatch" parameterType="list">
+        UPDATE <include refid="table"/>
+        SET
+        conversation_id = CASE
+        <foreach collection="list" item="item">
+            WHEN id = #{item.id} THEN #{item.conversationId}
+        </foreach>
+        END,
+        message_type = CASE
+        <foreach collection="list" item="item">
+            WHEN id = #{item.id} THEN #{item.messageType}
+        </foreach>
+        END,
+        text = CASE
+        <foreach collection="list" item="item">
+            WHEN id = #{item.id} THEN #{item.text}
+        </foreach>
+        END,
+        metadata = CASE
+        <foreach collection="list" item="item">
+            WHEN id = #{item.id} THEN #{item.metadata, typeHandler=jsonTypeHandler}
+        </foreach>
+        END
+        WHERE id IN
+        <foreach collection="list" item="item" open="(" close=")" separator=",">
+            #{item.id}
+        </foreach>
+    </update>
+
+    <!-- 单项插入或更新 -->
+    <insert id="upsert" parameterType="chatMessage">
+        INSERT INTO <include refid="table"/> (<include refid="columns"/>)
+        VALUES (<include refid="values"/>)
+        ON CONFLICT (id) DO UPDATE
+        SET <include refid="conflictSet"/>
+    </insert>
+
+    <!-- 单批插入或更新 -->
+    <insert id="upsertBatch" parameterType="list">
+        INSERT INTO <include refid="table"/> (<include refid="columns"/>)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (<include refid="itemValues"/>)
+        </foreach>
+        ON CONFLICT (id) DO UPDATE
+        SET <include refid="conflictSet"/>
+    </insert>
+
+    <!-- 单项删除 -->
+    <delete id="deleteById" parameterType="string">
+        DELETE FROM <include refid="table"/>
+        WHERE id = #{id}
+    </delete>
+
+    <!-- 单批删除 -->
+    <delete id="deleteBatchByIds" parameterType="list">
+        DELETE FROM <include refid="table"/>
+        WHERE id IN
+        <foreach collection="list" item="item" open="(" close=")" separator=",">
+            #{item}
+        </foreach>
+    </delete>
+
+    <!-- 清空 -->
+    <update id="truncate">
+        TRUNCATE TABLE <include refid="table"/> RESTART IDENTITY
+    </update>
+
+    <!-- ===== 业务扩展操作 ===== -->
+    <!-- 按对话 ID 查询 -->
+    <select id="selectByConversationId" parameterType="string" resultMap="chatMessageMap">
+        SELECT <include refid="columns"/>
+        FROM <include refid="table"/>
+        WHERE conversation_id = #{conversationId}
+        ORDER BY <include refid="order"/>
+    </select>
+
+    <!-- 按对话 ID 查询（指定最新数量） -->
+    <select id="selectLastNByConversationId" resultMap="chatMessageMap">
+        SELECT <include refid="columns"/>
+        FROM <include refid="table"/>
+        WHERE conversation_id = #{conversationId}
+        ORDER BY <include refid="order"/>
+        LIMIT #{lastN}
+    </select>
+
+    <!-- 按对话 ID 删除 -->
+    <delete id="deleteByConversationId" parameterType="string">
+        DELETE FROM <include refid="table"/>
+        WHERE conversation_id = #{conversationId}
+    </delete>
+</mapper>

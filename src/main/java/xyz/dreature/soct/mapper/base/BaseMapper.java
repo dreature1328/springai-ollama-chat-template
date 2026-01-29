@@ -1,4 +1,4 @@
-package xyz.dreature.soct.mapper;
+package xyz.dreature.soct.mapper.base;
 
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.cursor.Cursor;

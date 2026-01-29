@@ -1,25 +1,28 @@
 package xyz.dreature.soct.controller;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import xyz.dreature.soct.common.model.vo.Result;
 import xyz.dreature.soct.service.VectorService;
 
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
 // 操作接口（向量）
 @Slf4j
 @RestController
 @RequestMapping("/vector")
+@Validated
 public class VectorController {
     @Autowired
     VectorService vectorService;
 
+    // 向量化并存储（单份文档）
     @RequestMapping("/ingest")
     public Result<List<Document>> ingest(@NotNull MultipartFile file) {
         List<Document> result = vectorService.ingest(file);
@@ -29,6 +32,7 @@ public class VectorController {
         return Result.success(message, result);
     }
 
+    // 向量化并存储（多份文档）
     @RequestMapping("/ingest-batch")
     public Result<List<Document>> ingestBatch(@NotNull List<MultipartFile> files) {
         List<Document> result = vectorService.ingestBatch(files);
@@ -38,6 +42,7 @@ public class VectorController {
         return Result.success(message, result);
     }
 
+    // 清空向量存储
     @RequestMapping("/clear")
     public Result<Void> clear() {
         vectorService.clear();

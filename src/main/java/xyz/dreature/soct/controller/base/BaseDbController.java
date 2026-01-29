@@ -1,12 +1,11 @@
-package xyz.dreature.soct.controller;
+package xyz.dreature.soct.controller.base;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.text.StrSplitter;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.TypeUtil;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.Positive;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -14,11 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import xyz.dreature.soct.common.model.vo.Result;
-import xyz.dreature.soct.service.DbService;
+import xyz.dreature.soct.service.base.BaseDbService;
 
-import javax.validation.Valid;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.Pattern;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -26,12 +22,12 @@ import java.util.Map;
 // 基操作接口（数据库）
 @Slf4j
 @Validated
-public abstract class BaseDbController<T, ID extends Serializable> {
-    protected final DbService<T, ID> dbService;
+public abstract class BaseDbController<T, ID extends Serializable, S extends BaseDbService<T, ID, ?>> {
+    protected final S dbService;
     protected final Class<T> entityClass;
     protected final Class<ID> idClass;
 
-    protected BaseDbController(DbService<T, ID> dbService) {
+    protected BaseDbController(S dbService) {
         this.dbService = dbService;
         this.entityClass = (Class<T>) TypeUtil.getTypeArgument(this.getClass(), 0);
         this.idClass = (Class<ID>) TypeUtil.getTypeArgument(this.getClass(), 1);
